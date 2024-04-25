@@ -14,5 +14,9 @@ einops
 ipdb
 resampy
 soundfile
+dataloader
+torch
+pyyaml
+torchvision
 
 
