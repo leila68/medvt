@@ -22,6 +22,8 @@ import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
+# --model_path ../ckpts/avos/swin_medvt_avos.pth  --dataset davis --val_size 360 --flip --msc --outputs ./outputs/swin_medvt/davis --device cpu
+
 def get_args_parser():
     parser = argparse.ArgumentParser('MED-VT', add_help=False)
     parser.add_argument('--cfg_file', default=None)
@@ -101,7 +103,7 @@ def get_args_parser():
     parser.add_argument('--dataset', type=str, default='davis')
     parser.add_argument('--style', type=str, default=None)
     parser.add_argument('--sequence_names', type=str, default=None)
-    parser.add_argument('--output_dir', type=str, required=True,
+    parser.add_argument('--outputs', type=str, required=True,
                         help='path where to save, empty for no saving')
     parser.add_argument('--msc', action='store_true')
     parser.add_argument('--flip', action='store_true')
@@ -155,7 +157,7 @@ def main(args):
 if __name__ == '__main__':
     args_parser = argparse.ArgumentParser('VisVOS inference script', parents=[get_args_parser()])
     parsed_args = args_parser.parse_args()
-    if not hasattr(parsed_args, 'output_dir') or parsed_args.output_dir is None or len(parsed_args.output_dir) < 3:
+    if  hasattr(parsed_args, 'outputs'): #or parsed_args.output_dir is None or len(parsed_args.output_dir) < 3:
         from avos.evals import create_eval_save_dir_name_from_args
         out_dir_name = create_eval_save_dir_name_from_args(parsed_args)
         parsed_args.output_dir = os.path.join(os.path.dirname(parsed_args.model_path), out_dir_name)
@@ -169,7 +171,7 @@ if __name__ == '__main__':
     )
     logger.debug(parsed_args)
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-    logger.debug('output_dir: ' + str(parsed_args.output_dir))
+    logger.debug('outputs: ' + str(parsed_args.output_dir))
     logger.debug('experiment_name:%s' % experiment_name)
     logger.debug('log file: ' + str(os.path.join(parsed_args.output_dir, 'out.log')))
     main(parsed_args)
