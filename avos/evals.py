@@ -799,7 +799,7 @@ def run_inference(args, device, model, load_state_dict=True, out_dir=None, video
                                  num_workers=args.num_workers)
     with torch.no_grad():
         if load_state_dict:
-            state_dict = torch.load(args.model_path)['model']
+            state_dict = torch.load(args.model_path, map_location=torch.device('cpu'))['model']
             model.load_state_dict(state_dict, strict=True)
             logger.debug('model checkpoint loaded ...')
         model.eval()
