@@ -2,10 +2,10 @@
 Dataset paths.
 """
 
-davis16_train_seqs_file = '/local/riemann1/home/rezaul/datasets_vos/DAVIS-data/DAVIS_2016/train_seqs.txt'
-davis16_val_seqs_file = '/local/riemann1/home/rezaul/datasets_vos/DAVIS-data/DAVIS_2016/val_seqs.txt'
-davis16_rgb_path = '/local/riemann1/home/rezaul/datasets_vos/DAVIS-data/DAVIS_2016/JPEGImages/480p'
-davis16_gt_path = '/local/riemann1/home/rezaul/datasets_vos/DAVIS-data/DAVIS_2016/Annotations/480p'
+davis16_train_seqs_file = '/Users/leila/Desktop/medvt/dataset/DAVIS_2016/train_seqs.txt'
+davis16_val_seqs_file = '/Users/leila/Desktop/medvt/dataset/DAVIS_2016/val_seqs.txt'
+davis16_rgb_path = '/Users/leila/Desktop/medvt/dataset/DAVIS_2016/JPEGImages/480p'
+davis16_gt_path = '/Users/leila/Desktop/medvt/dataset/DAVIS_2016/Annotations/480p'
 davis16_flow_path = '/local/riemann1/home/rezaul/datasets_vos/DAVIS-data/DAVIS17/DAVIS/davis2017-flow'
 davis16_stylized_image_path = '/local/riemann/home/msiam/Stylized_DAVIS/'
 davis16_styles = ['Lynx', 'Maruska640', 'Zuzka1', 'Zuzka2']  # 'Original',
