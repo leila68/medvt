@@ -3,6 +3,10 @@ Training script for MED-VT with Swin backbone on AVOS
 Based on training script of VisTR (https://github.com/Epiphqny/VisTR)
 Which was modified from DETR (https://github.com/facebookresearch/detr)
 """
+# --output_dir ./outputs/medvtmm/medvt_avos/train --pvt_weights_path ./pretrained_backbones/avsbench/pvt_v2_b5.pth
+# --swin_b_pretrained_path ./pretrained_backbones/avos/swin_base_patch244_window877_kinetics400_22k.pth
+# --resnet101_coco_weights_path ./pretrained_backbones/avos/384_coco_r101.pth --device cpu
+
 import sys
 sys.path.append('./')
 import argparse
@@ -195,7 +199,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         flows = None
         if 'flows' in targets[0]:
             flows = torch.stack([ t['flows'] for t in targets ]).squeeze(0)
-        outputs = model(samples, flows=flows)
+        outputs = model(samples)
         loss_dict = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
         losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
