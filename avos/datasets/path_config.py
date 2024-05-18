@@ -26,3 +26,23 @@ youtube_objects_val_set_file = '/local/riemann1/home/rezaul/datasets_vos/Youtube
 youtube_objects_masks_dir = '/local/riemann1/home/rezaul/datasets_vos/YoutubeObjects/youtube_masks/'
 
 
+kittimots_train_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_train.json'
+kittimots_val_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_val.json'
+kittimots_val_fix_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_val_fix.json'
+kittimots_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02'
+kittimots_gt_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p'
+kittimots_flow_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS'
+kittimots_rgb_testing_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/testing/image_02'
+kittimots_stylized_image_path = '/local/riemann/home/msiam/Stylized_DAVIS/'
+kittimots_styles = ['Lynx', 'Maruska640', 'Zuzka1', 'Zuzka2']  # 'Original',
+
+# beluga server path
+# kittimots_train_json_file = '/home/liila/medvt/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_train.json'
+# kittimots_val_json_file = '/home/liila/medvt/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_val.json'
+# kittimots_val_fix_json_file = '/home/liila/medvt/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_val_fix.json'
+# kittimots_rgb_training_path = '/home/liila/medvt/medvt/dataset/KITTIMOTS//images/training/image_02'
+# kittimots_gt_path = '/home/liila/medvt/medvt/dataset/KITTIMOTS/annotations/375p'
+# kittimots_flow_path = '/home/liila/medvt/medvt/dataset/KITTIMOTS/'
+# kittimots_rgb_testing_path = '/home/liila/medvt/medvt/dataset/KITTIMOTS/images/testing/image_02'
+# kittimots_stylized_image_path = '/local/riemann/home/msiam/Stylized_DAVIS/'
+# kittimots_styles = ['Lynx', 'Maruska640', 'Zuzka1', 'Zuzka2']  # 'Original',
