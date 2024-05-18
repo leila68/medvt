@@ -152,3 +152,5 @@ def make_validation_transforms(min_size=360, max_sc=None):
         T.RandomResize([min_size], max_size=int(max_sc * min_size)),
         normalize,
     ])
+
+
