@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class KittimotsDataset(torch.utils.data.Dataset):
+class KittimotsTrainDataset(torch.utils.data.Dataset):
   def __init__(self, num_frames=6, use_ytvos=False, train_size=300, use_flow=False):
-    super(KittimotsDataset, self).__init__()
+    super(KittimotsTrainDataset, self).__init__()
     print('KittimotsDataset->use_flow:' + str(use_flow))
     self.num_frames = num_frames
     self.use_ytvos = use_ytvos
@@ -30,14 +30,13 @@ class KittimotsDataset(torch.utils.data.Dataset):
     self.use_flow = use_flow
     self._transforms = make_train_transform(train_size=train_size)
 
-    self.kittimots_training_path = dataset_path_config.kittimots_training_path
-    self.kittimots_testing_path = dataset_path_config.kittimots_testing_path
-    self.kittimots_annotations_json = dataset_path_config.kittimots_annotations_json
     self.kittimots_train_json_file = dataset_path_config.kittimots_train_json_file
     self.kittimots_val_json_file = dataset_path_config.kittimots_val_json_file
     self.kittimots_val_fix_json_file = dataset_path_config.kittimots_val_fix_json_file
+    self.kittimots_rgb_training_path = dataset_path_config.kittimots_rgb_training_path
     self.kittimots_gt_path = dataset_path_config.kittimots_gt_path
     self.kittimots_flow_path = dataset_path_config.kittimots_flow_path
+
 
     self.frames_info = {
       'kittimots': {}
@@ -52,10 +51,10 @@ class KittimotsDataset(torch.utils.data.Dataset):
 
       for video_name in filename_array:
         # Join the file path and image name
-        frames = sorted(glob.glob(os.path.join(self.kittimots_training_path, video_name, '*.png')))
+        frames = sorted(glob.glob(os.path.join(self.kittimots_rgb_training_path, video_name, '*.png')))
         self.frames_info['kittimots'][video_name] = [frame_path.split('/')[-1][:-4] for frame_path in frames]
         self.img_ids.extend([('kittimots', video_name, frame_index) for frame_index in range(len(frames))])
-        print(self.frames_info['kittimots'][video_name])
+        # print(self.frames_info['kittimots'][video_name])
 
   def __len__(self):
     return len(self.img_ids)
@@ -89,7 +88,7 @@ class KittimotsDataset(torch.utils.data.Dataset):
           bkd_flow_file = os.path.join(self.ytvos19_flow_path, video_name,
                                        frame_name + '_' + next_frame + '.png')
       else:
-        img_path = os.path.join(self.kittimots_training_path, video_name, frame_name + '.png')
+        img_path = os.path.join(self.kittimots_rgb_training_path, video_name, frame_name + '.png')
         gt_path = os.path.join(self.kittimots_gt_path, video_name, frame_name + '.png')
         if self.use_flow:
           prev_frame = '%05d' % (int(frame_name) - 1)
@@ -166,11 +165,11 @@ def make_train_transform(train_size=None):
   ])
 
 
-if __name__ == "__main__":
-    dataset_train = KittimotsDataset(num_frames=6, train_size=300,
-                                     use_ytvos=True, use_flow=1)
-    for i in dataset_train:
-      print(i)
+# if __name__ == "__main__":
+#     dataset_train = KittimotsTrainDataset(num_frames=6, train_size=300,
+#                                      use_ytvos=True, use_flow=1)
+#     for i in dataset_train:
+#       print(i)
 
 
 
