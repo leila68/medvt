@@ -1,5 +1,5 @@
 """
-kittolots dataloader
+kittomots dataloader
 """
 import math
 import torch

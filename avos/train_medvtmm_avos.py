@@ -38,6 +38,8 @@ from avos.models.utils import parse_argdict
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 import os
+from avos.datasets.test.kittimots_val_data import KittimotsValDataset
+from avos.datasets.train.kittimots_train_data import KittimotsTrainDataset
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
@@ -193,6 +195,8 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     tt1 = time.time()
     for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
         i_iter = i_iter + 1
+        print("==>"
+              "", i_iter)
         samples = samples.to(device)
         targets = [{k: v.to(device) if k in ['masks', 'flows'] else v for k, v in t.items()} for t in targets]
         # import ipdb;ipdb.set_trace()
@@ -240,7 +244,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 def create_data_loaders(args):
     use_ytvos_for_train = True # not args.finetune
-    dataset_train = Davis16TrainDataset(num_frames=args.num_frames, train_size=args.train_size,
+    # dataset_train = Davis16TrainDataset(num_frames=args.num_frames, train_size=args.train_size,
+    #                                     use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
+    dataset_train = KittimotsTrainDataset(num_frames=args.num_frames, train_size=args.train_size,
                                         use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
     if args.distributed:
         sampler_train = DistributedSampler(dataset_train)
@@ -254,7 +260,8 @@ def create_data_loaders(args):
     data_loader_train = DataLoader(dataset_train, batch_sampler=batch_sampler_train,
                                    collate_fn=misc.collate_fn, num_workers=args.num_workers)
 
-    dataset_val = Davis16ValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
+    # dataset_val = Davis16ValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
+    dataset_val = KittimotsValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
     if args.distributed:
         sampler_val = DistributedSampler(dataset_val, shuffle=False)
     else:
@@ -352,7 +359,7 @@ def train(args, device, model, criterion):
                     'epoch': epoch,
                     'args': args,
                 }, checkpoint_path)
-        if hasattr(args,'pretrain_settings') and 'pretrained_model_path' in args.pretrain_settings and len(args.pretrain_settings['pretrained_model_path']) > 5:
+        if hasattr(args, 'pretrain_settings') and 'pretrained_model_path' in args.pretrain_settings and len(args.pretrain_settings['pretrained_model_path']) > 5:
             args.model_path = output_dir / 'checkpoint_best.pth'
             args.aug = False
             torch.cuda.empty_cache()
