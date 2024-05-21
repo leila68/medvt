@@ -1,158 +1,52 @@
-from pycocotools.coco import COCO
-import numpy as np
 import cv2
-import json
-import os
+import torch
+import numpy as np
+import mmcv
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+from avos.datasets.train.davis16_train_data import Davis16TrainDataset
+from avos.datasets.train.kittimots_train_data import KittimotsTrainDataset
+import os
 
 
-def create_image_path(kittimots_training_path, kittimots_train_json_file, id):
-  with open(kittimots_train_json_file, 'r') as f:
-    data = json.load(f)
 
-  for entry in data['annotations']:
-    if entry['id'] == id:
-       file_name = entry['file_name']
-       file_path = os.path.join(kittimots_training_path, file_name)
-       print(file_path)
-       plt.imshow(mpimg.imread(file_path))
-       plt.show()
-    else:
-      print("Skipping image {}".format(entry['id']))
+def denormalize(tensor, mean=(0, 0, 0), std=(1, 1, 1)):
+    # Mean and standard deviation used for normalization
+    mean = torch.tensor(mean)
+    std = torch.tensor(std)
+    # Reshape mean and std to match the dimensions of the tensor
+    mean = mean.view(3, 1, 1)
+    std = std.view(3, 1, 1)
+    # Denormalize the tensor
+    denormalized_tensor = (obj[0].data * std) + mean
+    # Convert the tensor to a NumPy array
+    denormalized_image = denormalized_tensor.numpy()
+    # Clip values to the range [0, 1]
+    denormalized_image = np.clip(denormalized_image, 0, 1)
+    # Transpose the image to HWC format for matplotlib
+    denormalized_image = np.transpose(denormalized_image, (1, 2, 0))
+    return denormalized_image
 
-
-def image_path(kittimots_training_path,file_name):
-    print('path', os.path.join(kittimots_training_path, file_name))
-    return os.path.join(kittimots_training_path, file_name)
-
-
-def show_images_with_mask(img, mask):
-
-    # Create subplots with 1 row and 2 columns
-    fig, axes = plt.subplots(2, 1, figsize=(10, 10))
-
-    # Show the original image
-    axes[0].imshow(img)
-    axes[0].axis('off')  # Optional: hide axis
-    axes[0].set_title('Original Image')
-
-    # Show the image mask
-    axes[1].imshow(mask, cmap='gray')
-    axes[1].axis('off')  # Optional: hide axis
-    axes[1].set_title('Mask')
-
-    # Save the combined image as a PNG file
-    # plt.savefig('combined_image.png', bbox_inches='tight', pad_inches=0)
-
-    plt.show()
-    plt.close()
-
-
-def save_mask_images(kittimots_dataset_path, mask_data, file_name):
-    # Extract directory path and file name
-    directory, filename = os.path.split(file_name)
-
-    # Ensure the directory exists, create it if it doesn't
-    full_directory = os.path.join(kittimots_dataset_path, directory)
-    os.makedirs(full_directory, exist_ok=True)
-
-    # Save the mask image with the same name in the corresponding directory
-    mask_file_path = os.path.join(full_directory, filename)
-
-    # Convert mask data to numpy array
-    mask_array = np.array(mask_data, dtype=np.uint8)
-
-    # Save the mask image as PNG
-    cv2.imwrite(mask_file_path, mask_array)
-
-    return mask_file_path
-
-
-def subtract_masks(mask1, mask2):
-    # Perform pixel-wise subtraction
-    difference_mask = np.abs(mask2 - mask1)
-
-    # Check if all elements of the mask are zero
-    if np.all(difference_mask == 0):
-        print("There is no motion from first frame to second frame")
-    else:
-        print("There is motion from  first frame to second frame")
-
-    # Display the result
-    plt.figure(figsize=(10, 5))
-
-    plt.subplot(1, 3, 1)
-    plt.title('Mask 1')
-    plt.imshow(mask1,  interpolation='nearest', cmap='grey',)
-    # plt.colorbar()
-
-    plt.subplot(1, 3, 2)
-    plt.title('Mask 2')
-    plt.imshow(mask2, cmap='grey', interpolation='nearest')
-    # plt.colorbar()
-
-    plt.subplot(1, 3, 3)
-    plt.title('Difference Mask')
-    plt.imshow(difference_mask, cmap='grey', interpolation='nearest')
-    # plt.colorbar()
-
-    # Save the combined image as a PNG file
-    plt.savefig('diff_mask.png', bbox_inches='tight', pad_inches=0)
-
-    plt.tight_layout()
-    plt.show()
-    plt.close()
+    # plt.show()
+    # plt.close()
 
 
 if __name__ == "__main__":
-  kittimots_dataset_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/training/'
-  annotation_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_train.json'
-  kittimots_training_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02'
-  kittimots_train_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_train.json'
- 
 
-  img_show = mpimg.imread('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/training/0011/000051.png')
-  img_mks_show = mpimg.imread('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02/0011/000051.png')
-  # show_images_with_mask(img_mks_show, img_show)
+    obj_test = KittimotsTrainDataset(num_frames=1, train_size=300, use_ytvos=True, use_flow=True)
 
-  coco_ds = COCO(annotation_path)
+    for obj in obj_test:
+        # print(obj[0].data)
+        denormalized_image = denormalize(obj[0].data, mean=(0.485, 0.456, 0), std=(0.229, 0.224, 0.225))
+        plt.imshow(denormalized_image)
+        plt.axis('off')  # Turn off axis labels
+        plt.savefig("kitti_image.png", bbox_inches='tight', pad_inches=0)
 
-  ann_id = coco_ds.getAnnIds(imgIds=[111])
-  ann = coco_ds.loadAnns(ann_id)
-  mask1 = coco_ds.annToMask(ann[0])
+        # kittimots mask
+        numpy_img_mask = obj[1]['masks'].permute(1, 2, 0).numpy()
+        numpy_img_mask = (numpy_img_mask * 255).astype('uint8')
+        cv2.imwrite('kitti_image_mask.png', numpy_img_mask)
 
-  ann_id = coco_ds.getAnnIds(imgIds=[112])
-  ann = coco_ds.loadAnns(ann_id)
-  mask2 = coco_ds.annToMask(ann[0])
-
-  subtract_masks(mask1, mask2)
-
-
-  img_ids = coco_ds.getImgIds()
-  for img_id in img_ids:
-      ann_id = coco_ds.getAnnIds(imgIds=[img_id])
-      ann = coco_ds.loadAnns(ann_id)
-      mask = coco_ds.annToMask(ann[0])
-      img_load = coco_ds.loadImgs(img_id)[0]
-      img_path = image_path(kittimots_training_path, img_load['file_name'])
-      # plt.imshow(mask, cmap='gray')
-      # plt.axis('off')
-      # plt.show()
-      # img = mpimg.imread(img_path)
-      # plt.imshow(img)
-      # plt.axis('off')  # Optional: hide axis
-      # plt.show()
-      img = mpimg.imread(img_path)
-      # show_images_with_mask(img, mask)
-      # save_mask_images(kittimots_dataset_path, mask, img_load['file_name'])
-      exit()
-
-
-
-
-
-
+        exit(0)
 
 
 
