@@ -217,13 +217,52 @@ def create_gt_files(kittimots_train_json_file, kittimots_gt_training_path):
         # exit()
 
 
+from PIL import Image
+
+
+def resize_image(input_path, output_path, size=(1242, 375)):
+
+    try:
+        with Image.open(input_path) as img:
+            resized_img = img.resize(size, Image.Resampling.LANCZOS)
+            resized_img.save(output_path)
+            print(f"Image saved to {output_path} with size {size}")
+    except Exception as e:
+        print(f"An error occurred with file {input_path}: {e}")
+
+
+def resize_images_in_directory(input_dir, output_dir, size=(1242, 375)):
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for filename in os.listdir(input_dir):
+        input_path = os.path.join(input_dir, filename)
+        output_path = os.path.join(output_dir, filename)
+
+        # Check if the file is an image (basic check)
+        if os.path.isfile(input_path) and input_path.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
+            resize_image(input_path, output_path, size)
+        else:
+            print(f"Skipping non-image file: {filename}")
+
+
+# Example usage:
+input_image_path = "path/to/your/image.jpg"
+output_image_path = "path/to/save/resized/image.jpg"
+resize_image(input_image_path, output_image_path)
+
+
 if __name__ == "__main__":
     kittimots_train_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_train.json'
-    kittimots_gt_training_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/training/'
+    kittimots_gt_training_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/'
     kittimots_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02'
+    kittimots_gt_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/'
 
     # create_gt_files(kittimots_train_json_file, kittimots_gt_training_path)
-    # check_image_existence(kittimots_rgb_training_path, kittimots_gt_training_path)
-    # test_result(kittimots_rgb_training_path, kittimots_gt_training_path, dir_name='0014')
-    # print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/motion/0000/000000.png')
-
+    check_image_existence(kittimots_rgb_training_path, kittimots_gt_training_path)
+    test_result(kittimots_rgb_training_path, kittimots_gt_path, dir_name='0019')
+    # print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/0017/000060.png')
+    # print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/0000/000014.png')
+    # resize_images_in_directory('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02/0019',
+    #                            '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02/r-0019')

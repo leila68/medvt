@@ -224,7 +224,7 @@ def create_gt_files(kittimots_val_json_file, kittimots_gt_val_path):
 if __name__ == "__main__":
 
     kittimots_val_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_val.json'
-    kittimots_gt_val_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/validation/'
+    kittimots_gt_val_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/'
     kittimots_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02'
 
     # create_gt_files(kittimots_val_json_file, kittimots_gt_val_path)
