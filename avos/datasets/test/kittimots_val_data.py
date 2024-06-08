@@ -14,6 +14,13 @@ import json
 
 from avos.datasets import path_config as dataset_path_config
 import avos.datasets.transforms as T
+# import avos.datasets.transforms_kitti as T
+
+# # Resize to specific width and height
+# resize_transform = T.Resize((1242, 375))
+#
+# # Resize while keeping aspect ratio, by specifying shorter side
+# resize_transform = T.Resize(256)  # Resize shorter side to 256 pixels
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -28,7 +35,8 @@ class KittimotsValDataset(torch.utils.data.Dataset):
         self.use_flow = use_flow
         self.im_size = val_size
         self.style = style
-        self._transforms = make_validation_transforms(min_size=val_size, max_sc=max_sc)
+        # self._transforms = make_validation_transforms(min_size=val_size, max_sc=max_sc) #davis
+        self._transforms = make_validation_transforms(min_size=val_size, max_sc=max_sc) #kittimots
 
         self.kittimots_val_json_file = dataset_path_config.kittimots_val_json_file
         self.kittimots_rgb_training_path = dataset_path_config.kittimots_rgb_training_path
@@ -36,7 +44,6 @@ class KittimotsValDataset(torch.utils.data.Dataset):
         self.kittimots_flow_path = dataset_path_config.kittimots_flow_path
         self.all_styles= dataset_path_config.kittimots_styles
         self.stylized_kittimots_path = dataset_path_config.kittimots_stylized_image_path
-
 
         if style is None or style == 'None':
             style = 'Original'
@@ -150,10 +157,14 @@ def make_validation_transforms(min_size=360, max_sc=None):
         max_sc = 1.8
     normalize = T.Compose([
         T.ToTensor(),
-        T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+
     ])
     return T.Compose([
         T.RandomResize([min_size], max_size=int(max_sc * min_size)),
         normalize,
     ])
+
+
+
 

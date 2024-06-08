@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-
 def save_motion_mask(kittimots_dataset_path, mask_data, file_name):
     # Extract directory path and file name
     directory, filename = os.path.split(file_name)
@@ -259,9 +258,12 @@ if __name__ == "__main__":
     kittimots_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02'
     kittimots_gt_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/'
 
+    bdd_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/BDD/ImageSets'
+    bdd_gt_path = '/Users/leila/Desktop/medvt/dataset/BDD/annotations/train'
+
     # create_gt_files(kittimots_train_json_file, kittimots_gt_training_path)
-    check_image_existence(kittimots_rgb_training_path, kittimots_gt_training_path)
-    test_result(kittimots_rgb_training_path, kittimots_gt_path, dir_name='0019')
+    # check_image_existence(kittimots_rgb_training_path, kittimots_gt_training_path)
+    test_result(bdd_rgb_training_path, bdd_gt_path, dir_name='b1d0a191-03dcecc2')
     # print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/0017/000060.png')
     # print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/0000/000014.png')
     # resize_images_in_directory('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02/0019',

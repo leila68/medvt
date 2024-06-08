@@ -5,6 +5,7 @@ import mmcv
 import matplotlib.pyplot as plt
 from avos.datasets.train.davis16_train_data import Davis16TrainDataset
 from avos.datasets.train.kittimots_train_data import KittimotsTrainDataset
+from avos.datasets.test.kittimots_val_data import KittimotsValDataset
 import os
 
 
@@ -33,20 +34,22 @@ def denormalize(tensor, mean=(0, 0, 0), std=(1, 1, 1)):
 if __name__ == "__main__":
 
     obj_test = KittimotsTrainDataset(num_frames=1, train_size=300, use_ytvos=True, use_flow=True)
+    # obj_test = KittimotsValDataset(num_frames=1, val_size=300,  use_flow=False)
 
-    for obj in obj_test:
+    #for obj in obj_test:
+    for idx, obj in enumerate(obj_test):
         # print(obj[0].data)
         denormalized_image = denormalize(obj[0].data, mean=(0.485, 0.456, 0), std=(0.229, 0.224, 0.225))
         plt.imshow(denormalized_image)
         plt.axis('off')  # Turn off axis labels
-        plt.savefig("kitti_image.png", bbox_inches='tight', pad_inches=0)
+        plt.savefig("kitti_images_%05d.png"%idx, bbox_inches='tight', pad_inches=0)
 
         # kittimots mask
         numpy_img_mask = obj[1]['masks'].permute(1, 2, 0).numpy()
         numpy_img_mask = (numpy_img_mask * 255).astype('uint8')
-        cv2.imwrite('kitti_image_mask.png', numpy_img_mask)
+        cv2.imwrite('kitti_images_mask_%05d.png'%idx, numpy_img_mask)
 
-        exit(0)
+        # exit(0)
 
 
 

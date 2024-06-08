@@ -203,6 +203,7 @@ def resize(clip, target, size, max_size=None):
     return rescaled_image, target
 
 
+
 def pad(clip, target, padding):
     # assumes that we only pad on the bottom right corners
     padded_image = []

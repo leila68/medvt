@@ -165,11 +165,24 @@ def make_train_transform(train_size=None):
   ])
 
 
-# if __name__ == "__main__":
-#     dataset_train = KittimotsTrainDataset(num_frames=6, train_size=300,
-#                                      use_ytvos=True, use_flow=1)
-#     for i in dataset_train:
-#       print(i)
+# def make_train_transform(train_size=None):
+#
+#     img_norm_cfg = {'mean':[123.675, 116.28, 103.53], 'std':[58.395, 57.12, 57.375]}
+#
+#     return T.Compose([
+#       T.Resize(img_scale=[(1242, 375), (1242, 343), (1242, 311),(1242, 279), (1242, 247), (1242, 215)],
+#                                     multiscale_mode='value', keep_ratio=True),
+#       T.RandomFlip(flip_ratio=0.5),
+#       T.Normalize(mean=img_norm_cfg['mean'], std=img_norm_cfg['std'], to_rgb=False),
+#       T.Pad(size_divisor=32),
+#       T.ToTensor(['imgs', 'gt_masks', 'labels'])
+#     ]),
+#     img_norm_cfg
+
+
+
+
+
 
 
 

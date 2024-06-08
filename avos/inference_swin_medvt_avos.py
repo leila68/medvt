@@ -24,6 +24,9 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # --model_path ../ckpts/avos/swin_medvt_avos.pth  --dataset davis --val_size 360 --flip --msc --outputs ./outputs/swin_medvt/davis --device cpu
 
+# --model_path ../ckpts/avos/swin_medvt_avos.pth  --dataset kittimots --val_size 360 --flip --msc --outputs ./outputs/swin_medvt/kittimots --device cpu
+
+
 def get_args_parser():
     parser = argparse.ArgumentParser('MED-VT', add_help=False)
     parser.add_argument('--cfg_file', default=None)

@@ -33,6 +33,7 @@ from avos.utils import misc as misc
 from avos.datasets import transforms as T
 from avos.evals import inference_on_all_vos_dataset
 from avos.evals import infer_on_davis
+from avos.evals import infer_on_kittimots
 # from avos.utils.wandb_utils import init_or_resume_wandb_run, get_viz_img
 from avos.models.utils import parse_argdict
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ import os
 from avos.datasets.test.kittimots_val_data import KittimotsValDataset
 from avos.datasets.train.kittimots_train_data import KittimotsTrainDataset
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 def get_args_parser():
@@ -195,14 +196,13 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     tt1 = time.time()
     for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
         i_iter = i_iter + 1
-        print("==>"
-              "", i_iter)
+        print("==>", i_iter)
         samples = samples.to(device)
         targets = [{k: v.to(device) if k in ['masks', 'flows'] else v for k, v in t.items()} for t in targets]
         # import ipdb;ipdb.set_trace()
         flows = None
         if 'flows' in targets[0]:
-            flows = torch.stack([ t['flows'] for t in targets ]).squeeze(0)
+            flows = torch.stack([t['flows'] for t in targets]).squeeze(0)
         outputs = model(samples)
         loss_dict = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
@@ -247,7 +247,7 @@ def create_data_loaders(args):
     # dataset_train = Davis16TrainDataset(num_frames=args.num_frames, train_size=args.train_size,
     #                                     use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
     dataset_train = KittimotsTrainDataset(num_frames=args.num_frames, train_size=args.train_size,
-                                        use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
+                                          use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
     if args.distributed:
         sampler_train = DistributedSampler(dataset_train)
         sampler_train.set_epoch(args.start_epoch)
@@ -336,14 +336,17 @@ def train(args, device, model, criterion):
             args.clip_max_norm, output_viz_dir, use_wandb=args.use_wandb,
             viz_freq=args.viz_freq, total_epochs=args.epochs, args=args)
         t2 = time.time()
-        mean_iou = infer_on_davis(model, data_loader_val, device,
-                                         msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
+        # mean_iou = infer_on_davis(model, data_loader_val, device,
+        #                           msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
+        mean_iou = infer_on_kittimots(model, data_loader_val, device,
+                                      msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
         logger.debug('**************************')
         logger.debug('[Epoch:%2d] val_mean_iou:%0.3f' % (epoch, mean_iou))
         if mean_iou > best_eval_iou:
             best_eval_iou = mean_iou
             best_eval_epoch = epoch
-        logger.debug('Davis Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
+        # logger.debug('Davis Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
+        logger.debug('kittimots Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
         if epoch > -1:
             lr_scheduler.step()
         if args.output_dir:
