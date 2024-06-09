@@ -11,7 +11,7 @@ from tqdm import tqdm
 import os
 import glob
 import torch
-import wandb
+# import wandb
 from torch.utils.data import DataLoader
 
 import avos.utils as utils
@@ -19,6 +19,7 @@ import avos.utils.misc
 from avos.utils.misc import NestedTensor
 from avos.datasets.test.davis16_val_data import Davis16ValDataset as Davis16ValDataset
 from avos.datasets.test.kittimots_val_data import KittimotsValDataset as KittimotsValDataset
+from avos.datasets.test.bdd_val_data import BddValDataset as BddValDataset
 from avos.datasets.test.moca import MoCADataset
 from avos.datasets.test.youtube_objects import YouTubeObjects
 from avos.datasets import path_config as dataset_path_config
@@ -30,8 +31,8 @@ logger.setLevel(logging.DEBUG)
 
 
 # Set project name, config parameters, etc.
-wandb.init(project="medvt")
-os.environ["WANDB_MODE"] = "offline"
+# wandb.init(project="medvt")
+# os.environ["WANDB_MODE"] = "offline"
 
 
 def create_eval_save_dir_name_from_args(_args):
@@ -79,7 +80,7 @@ def compute_predictions_flip_ms(model, samples, gt_shape, flows=None, ms=True, m
         # print('using flip')
         samples_flipped, flows_flipped = augment_flip(samples, flows)
 
-        outputs_flipped = compute_predictions_ms(model, flows, samples_flipped, flows_flipped, gt_shape, ms=ms,
+        outputs_flipped = compute_predictions_ms(model, samples_flipped, flows_flipped, gt_shape,
                                                  ms_gather=ms_gather, scales=scales)
         outputs_flipped['pred_masks'] = utils.misc.interpolate(outputs_flipped['pred_masks'], size=gt_shape,
                                                                mode="bilinear", align_corners=False)
@@ -856,6 +857,104 @@ def infer_on_kittimots(model, data_loader, device, msc=False, flip=False, save_p
     logger.debug('Kittimots Videos Mean IOU: %0.3f' % video_mean_iou)
     return video_mean_iou
 
+@torch.no_grad()
+def infer_on_bdd(model, data_loader, device, msc=False, flip=False, save_pred=False,
+                   out_dir='./results/bdd/', msc_scales=None):
+    if msc and msc_scales is not None:
+        _scales = msc_scales
+    elif msc and msc_scales is None:
+        _scales = [0.75, 0.8, 0.9, 1, 1.1, 1.2, 1.3]
+    else:
+        _scales = [1]
+    model.eval()
+    i_iter = 0
+    iou_list = []
+    vid_iou_dict = {}
+    running_video_name = None
+    for samples, targets in tqdm(data_loader):
+        i_iter = i_iter + 1
+        video_name = targets[0]['video_name']
+        frame_ids = targets[0]['frame_ids']
+        center_frame_name = targets[0]['center_frame']
+        center_frame_index = frame_ids.index(center_frame_name)
+        samples = samples.to(device)
+        targets = [{k: v.to(device) if k in ['masks', 'flows'] else v for k, v in t.items()} for t in targets]
+        # import ipdb;ipdb.set_trace()
+        flows = None
+        if 'flows' in targets[0]:
+            flows = torch.stack([ t['flows'] for t in targets ]).squeeze(0)
+            # print('received flow...')
+        # ###############################################
+        center_gt_path = targets[0]['mask_paths'][center_frame_index]
+        center_gt = cv2.imread(center_gt_path, cv2.IMREAD_GRAYSCALE)
+        center_gt[center_gt > 0] = 1
+        gt_shape = center_gt.shape
+        if running_video_name is not None and video_name != running_video_name:
+            video_iou = np.mean(list(vid_iou_dict[running_video_name].values()))
+            logger.debug('video_name:%s iou:%0.3f' % (running_video_name, video_iou))
+        running_video_name = video_name
+        outputs = compute_predictions_flip_ms(model, samples, gt_shape, flows=flows,  ms=msc, ms_gather='mean',
+                                              flip=flip, flip_gather='mean', scales=_scales)
+        # import ipdb; ipdb.set_trace()
+        src_masks = outputs["pred_masks"]
+        yc_logits = src_masks.squeeze(0).cpu().detach().numpy()[center_frame_index, :, :].copy()
+        yc_binmask = yc_logits.copy()
+        yc_binmask[yc_binmask > 0.5] = 1
+        yc_binmask[yc_binmask <= 0.5] = 0
+        out = yc_binmask.astype(center_gt.dtype)
+        # ########################################
+        iou = eval_iou(center_gt.copy(), out.copy())
+        iou_list.append(iou)
+        if video_name not in vid_iou_dict:
+            vid_iou_dict[video_name] = {}
+        vid_iou_dict[video_name][center_frame_name] = iou
+        if save_pred:
+            logits_out_dir = os.path.join(out_dir, 'logits', video_name)
+            if not os.path.exists(logits_out_dir):
+                os.makedirs(logits_out_dir)
+            cv2.imwrite(os.path.join(logits_out_dir, '%s.png' % center_frame_name),
+                        (yc_logits.astype(np.float32) * 255).astype(np.uint8))
+            bm_out_dir = os.path.join(out_dir, 'bin_mask', video_name)
+            if not os.path.exists(bm_out_dir):
+                os.makedirs(bm_out_dir)
+            cv2.imwrite(os.path.join(bm_out_dir, '%s.png' % center_frame_name),
+                        (out.astype(np.float32) * 255).astype(np.uint8))  # it is 0, 1
+            # ### save overlay
+            overlay_mask = (out.copy().astype(np.float32)* 255).astype(np.uint8)
+            if overlay_mask.max() > 1:
+                overlay_mask[overlay_mask > 100] = 255
+                overlay_mask[overlay_mask <= 100] = 0
+            center_img_path = targets[0]['img_paths'][center_frame_index]
+            center_img = cv2.imread(center_img_path)
+            overlay = create_overlay(center_img, overlay_mask, [0, 255])
+            overlay_out_dir: str = os.path.join(out_dir, 'overlay', video_name)
+            if not os.path.exists(overlay_out_dir):
+                os.makedirs(overlay_out_dir)
+            cv2.imwrite(os.path.join(overlay_out_dir, '%s.png' % center_frame_name), overlay)
+
+    video_iou = np.mean(list(vid_iou_dict[running_video_name].values()))
+    logger.debug('video_name:%s iou:%0.3f' % (running_video_name, video_iou))
+    video_mean_iou = np.mean([np.mean(list(vid_iou_f.values())) for _, vid_iou_f in vid_iou_dict.items()])
+    # ### ### Write the results to CSV ### ###
+    csv_file_name = 'bdd_results.csv'
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    video_names = []
+    video_ious = []
+    for k, v in vid_iou_dict.items():
+        vid_iou = np.mean(list(v.values()))
+        video_names.append(k)
+        video_ious.append('%0.3f' % vid_iou)
+        logger.debug('video_name:%s iou:%0.3f' % (k, vid_iou))
+    video_names.append('Video Mean')
+    video_ious.append('%0.3f' % video_mean_iou)
+    with open(os.path.join(out_dir, csv_file_name), 'w') as f:
+        cf = csv.writer(f)
+        cf.writerow(video_names)
+        cf.writerow(video_ious)
+    logger.debug('bdd Videos Mean IOU: %0.3f' % video_mean_iou)
+    return video_mean_iou
+
 
 def run_inference(args, device, model, load_state_dict=True, out_dir=None, videos=None):
     if out_dir is None:
@@ -894,6 +993,11 @@ def run_inference(args, device, model, load_state_dict=True, out_dir=None, video
         dataset_val = KittimotsValDataset(num_frames=args.num_frames, val_size=args.val_size,
                                           sequence_names=args.sequence_names, style=args.style,
                                           use_flow=args.use_flow)
+    if args.dataset == 'bdd':
+        dataset_val = BddValDataset(num_frames=args.num_frames, val_size=args.val_size,
+                                        sequence_names=args.sequence_names,
+                                        max_sc=davis_max_sc, style=args.style,
+                                        use_flow=args.use_flow)
     elif args.dataset == 'moca':
         dataset_val = MoCADataset(num_frames=args.num_frames, min_size=args.val_size,
                                   sequence_names=args.sequence_names, perturb=args.perturb,
@@ -929,6 +1033,9 @@ def run_inference(args, device, model, load_state_dict=True, out_dir=None, video
                            msc_scales=args.davis_msc_scales if hasattr(args, 'davis_msc_scales') else None)
         elif args.dataset == 'kittimots':
             infer_on_kittimots(model, data_loader_val, device, msc=args.msc, flip=args.flip,
+                               save_pred=args.save_pred, out_dir=out_dir)
+        elif args.dataset == 'bdd':
+            infer_on_bdd(model, data_loader_val, device, msc=args.msc, flip=args.flip,
                                save_pred=args.save_pred, out_dir=out_dir)
         else:
             raise ValueError('dataset name: %s not implemented' % args.dataset)
