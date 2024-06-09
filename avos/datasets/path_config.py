@@ -46,3 +46,11 @@ kittimots_styles = ['Lynx', 'Maruska640', 'Zuzka1', 'Zuzka2']  # 'Original',
 # kittimots_rgb_testing_path = '/home/liila/medvt/medvt/dataset/KITTIMOTS/images/testing/image_02'
 # kittimots_stylized_image_path = '/local/riemann/home/msiam/Stylized_DAVIS/'
 # kittimots_styles = ['Lynx', 'Maruska640', 'Zuzka1', 'Zuzka2']  # 'Original',
+
+bdd_train_seqs_file = '/Users/leila/Desktop/medvt/dataset/BDD/train_seqs.txt'
+bdd_val_seqs_file = '/Users/leila/Desktop/medvt/dataset/BDD/val_seqs.txt'
+bdd_rgb_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/validation'
+bdd_gt_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/validation'
+bdd_flow_path = '/local/riemann1/home/rezaul/datasets_vos/DAVIS-data/DAVIS17/DAVIS/davis2017-flow'
+bdd_stylized_image_path = '/local/riemann/home/msiam/Stylized_DAVIS/'
+bdd_styles = ['Lynx', 'Maruska640', 'Zuzka1', 'Zuzka2']  # 'Original',
