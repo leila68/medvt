@@ -49,8 +49,10 @@ kittimots_styles = ['Lynx', 'Maruska640', 'Zuzka1', 'Zuzka2']  # 'Original',
 
 bdd_train_seqs_file = '/Users/leila/Desktop/medvt/dataset/BDD/train_seqs.txt'
 bdd_val_seqs_file = '/Users/leila/Desktop/medvt/dataset/BDD/val_seqs.txt'
-bdd_rgb_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/validation'
-bdd_gt_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/validation'
-bdd_flow_path = '/local/riemann1/home/rezaul/datasets_vos/DAVIS-data/DAVIS17/DAVIS/davis2017-flow'
-bdd_stylized_image_path = '/local/riemann/home/msiam/Stylized_DAVIS/'
+bdd_rgb_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/val'
+bdd_gt_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/val'
+bdd_rgb_path = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/720p'
+bdd_gt_path = '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/720p'
+bdd_flow_path = '/Users/leila/Desktop/medvt/dataset'
+bdd_stylized_image_path = '/Users/leila/Desktop/medvt/Stylized_BDD/'
 bdd_styles = ['Lynx', 'Maruska640', 'Zuzka1', 'Zuzka2']  # 'Original',
