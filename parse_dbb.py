@@ -252,15 +252,92 @@ def convert_to_black_and_white(input_folder):
             print(f"Converted {filename} to black and white and replaced the original image.")
 
 
+def invert_black_and_white(image_path, output_path):
+    # Open the image file
+    img = Image.open(image_path).convert('L')  # Convert to grayscale (black and white)
+
+    # Convert the image to a numpy array
+    img_array = np.array(img)
+
+    # Invert the colors: black (0) to white (255) and white (255) to black (0)
+    inverted_img_array = 255 - img_array
+
+    # Convert the numpy array back to an image
+    inverted_img = Image.fromarray(inverted_img_array)
+
+    # Save the inverted image
+    inverted_img.save(output_path)
+
+
+def compare_and_delete_images(folder_name, path1, path2):
+    # Create the full path for the folders in both directories
+    dir_path1 = os.path.join(path1, folder_name)
+    dir_path2 = os.path.join(path2, folder_name)
+
+    # Check if both directories exist
+    if not os.path.exists(dir_path1) or not os.path.exists(dir_path2):
+        print(f"One or both directories do not exist: {dir_path1}, {dir_path2}")
+        return
+
+    # Function to strip extension and normalize filenames
+    def normalize_filename(filename):
+        return os.path.splitext(filename)[0].strip()
+
+    # Get sets of normalized images in each directory
+    images1 = {normalize_filename(img) for img in os.listdir(dir_path1)}
+    images2 = {normalize_filename(img) for img in os.listdir(dir_path2)}
+
+    # Debug prints to verify the contents of each set
+    print(f"Normalized images in {dir_path1}: {images1}")
+    print(f"Normalized images in {dir_path2}: {images2}")
+
+    # Find images that are in both directories
+    common_images = images1.intersection(images2)
+    common_images = [f"{image}.jpg" for image in common_images]
+    # print(f"Common images: {common_images}")
+    # Delete these images from path2
+    # Check each file in path2 and keep only those that are in common_images_with_extension
+    for file in images2:
+        # Normalize the filename and append .jpg
+        normalized_file_name = f"{os.path.splitext(file)[0].strip()}.jpg"
+        full_file_path = os.path.join(dir_path2, normalized_file_name)
+        if normalized_file_name not in common_images:
+            # Delete the file if it's not in common_images_with_extension
+            # print(full_file_path)
+            os.remove(full_file_path)
+            print(f"Deleted: {full_file_path}")
+
+
 if __name__ == "__main__":
 
-    bdd_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/BDD/ImageSets'
-    bdd_gt_path = '/Users/leila/Desktop/medvt/dataset/BDD/annotations/train'
+    bdd_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/720p'
+    bdd_gt_path = '/Users/leila/Desktop/medvt/dataset/BDD/annotations/720p'
+    bdd_train_seqs_file = '/Users/leila/Desktop/medvt/dataset/BDD/train_seqs.txt'
 
+    path1 = '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/720p'
+    path2 = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/720p'
+
+
+    # invert_black_and_white('/Users/leila/Desktop/medvt/dataset/BDD/Annotations/720p/b33ea6cb-3464fb13/frame0361.png',
+    #                        '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/720p/b33ea6cb-3464fb13/frame0361.png')
 
     # check_image_existence(bdd_rgb_training_path, bdd_gt_path)
     # test_result(bdd_rgb_training_path, bdd_gt_path, dir_name='b2e54795-db1f3bad')
     # print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/0017/000060.png')
-    print_image_size('/Users/leila/Desktop/medvt/dataset/BDD/Annotations/validation/b1cd1e94-26dd524f/frame0001.png')
-    # convert_to_black_and_white("/Users/leila/Desktop/medvt/dataset/BDD/Annotations/validation/b1e1a7b8-65ec7612")
+    # print_image_size('/Users/leila/Desktop/medvt/dataset/BDD/Annotations/validation/b1cd1e94-26dd524f/frame0001.png')
+    # compare_and_delete_images('b1d0a191-03dcecc2', path1, path2)
+
+    with open(bdd_train_seqs_file, 'r') as file:
+        for line in file:
+            print(line.strip())
+            # path = os.path.join(bdd_gt_path, line.strip())
+            # print(path)
+            # convert_to_black_and_white(path)
+            # compare_and_delete_images(line.strip(), path1, path2)
+            # test_result(bdd_rgb_training_path, bdd_gt_path, line.strip())
+            exit()
+
+
+
+
 
