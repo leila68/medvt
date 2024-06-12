@@ -981,7 +981,7 @@ def run_inference(args, device, model, load_state_dict=True, out_dir=None, video
 
     if hasattr(args,'davis_input_max_sc') and args.msc:
         davis_max_sc = args.davis_input_max_sc
-    else :
+    else:
         davis_max_sc = None
 
     if args.dataset == 'davis':
@@ -993,7 +993,7 @@ def run_inference(args, device, model, load_state_dict=True, out_dir=None, video
         dataset_val = KittimotsValDataset(num_frames=args.num_frames, val_size=args.val_size,
                                           sequence_names=args.sequence_names, style=args.style,
                                           use_flow=args.use_flow)
-    if args.dataset == 'bdd':
+    elif args.dataset == 'bdd':
         dataset_val = BddValDataset(num_frames=args.num_frames, val_size=args.val_size,
                                         sequence_names=args.sequence_names,
                                         max_sc=davis_max_sc, style=args.style,
