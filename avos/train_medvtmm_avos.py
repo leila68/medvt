@@ -5,7 +5,7 @@ Which was modified from DETR (https://github.com/facebookresearch/detr)
 """
 # --output_dir ./outputs/medvtmm/medvt_avos/train --pvt_weights_path ./pretrained_backbones/avsbench/pvt_v2_b5.pth
 # --swin_b_pretrained_path ./pretrained_backbones/avos/swin_base_patch244_window877_kinetics400_22k.pth
-# --resnet101_coco_weights_path ./pretrained_backbones/avos/384_coco_r101.pth --device cpu
+# --resnet101_coco_weights_path ./pretrained_backbones/avos/384_coco_r101.pth --use_flow 0 --device cpu
 
 import sys
 sys.path.append('./')
@@ -29,11 +29,13 @@ from torch.utils.data import DataLoader, DistributedSampler
 from avos.utils.torch_poly_lr_decay import PolynomialLRDecay as PolynomialLRDecay
 from avos.datasets.train.davis16_train_data import Davis16TrainDataset
 from avos.datasets.test.davis16_val_data import Davis16ValDataset
+from avos.datasets.test.bdd_val_data import BddValDataset
 from avos.utils import misc as misc
 from avos.datasets import transforms as T
 from avos.evals import inference_on_all_vos_dataset
 from avos.evals import infer_on_davis
 from avos.evals import infer_on_kittimots
+from avos.evals import infer_on_bdd
 # from avos.utils.wandb_utils import init_or_resume_wandb_run, get_viz_img
 from avos.models.utils import parse_argdict
 logger = logging.getLogger(__name__)
@@ -41,6 +43,7 @@ logger.setLevel(logging.DEBUG)
 import os
 from avos.datasets.test.kittimots_val_data import KittimotsValDataset
 from avos.datasets.train.kittimots_train_data import KittimotsTrainDataset
+from avos.datasets.train.bdd_train_data import BddTrainDataset
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -244,10 +247,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 def create_data_loaders(args):
     use_ytvos_for_train = True # not args.finetune
-    # dataset_train = Davis16TrainDataset(num_frames=args.num_frames, train_size=args.train_size,
-    #                                     use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
-    dataset_train = KittimotsTrainDataset(num_frames=args.num_frames, train_size=args.train_size,
-                                          use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
+    # dataset_train = Davis16TrainDataset(num_frames=args.num_frames, train_size=args.train_size, use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
+    # dataset_train = KittimotsTrainDataset(num_frames=args.num_frames, train_size=args.train_size, use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
+    dataset_train = BddTrainDataset(num_frames=args.num_frames, train_size=args.train_size, use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
     if args.distributed:
         sampler_train = DistributedSampler(dataset_train)
         sampler_train.set_epoch(args.start_epoch)
@@ -261,7 +263,8 @@ def create_data_loaders(args):
                                    collate_fn=misc.collate_fn, num_workers=args.num_workers)
 
     # dataset_val = Davis16ValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
-    dataset_val = KittimotsValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
+    # dataset_val = KittimotsValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
+    dataset_val = BddValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
     if args.distributed:
         sampler_val = DistributedSampler(dataset_val, shuffle=False)
     else:
@@ -293,7 +296,7 @@ def train(args, device, model, criterion):
             "lr": args.lr_backbone,
         },
     ]
-    if hasattr(args,'pretrain_settings') :
+    if hasattr(args, 'pretrain_settings') :
         logger.debug(f'Using args.pretrain_settings:{str(args.pretrain_settings)}')
         param_dicts = [
             {
@@ -312,7 +315,7 @@ def train(args, device, model, criterion):
     optimizer = torch.optim.AdamW(param_dicts, lr=args.lr, weight_decay=args.weight_decay)
     lr_scheduler = PolynomialLRDecay(optimizer, max_decay_steps=args.epochs - 1, end_learning_rate=args.end_lr,
                                      power=args.poly_power)
-    if hasattr(args,'pretrain_settings') and 'pretrained_model_path' in args.pretrain_settings and len(args.pretrain_settings['pretrained_model_path']) > 5:
+    if hasattr(args, 'pretrain_settings') and 'pretrained_model_path' in args.pretrain_settings and len(args.pretrain_settings['pretrained_model_path']) > 5:
         print(f"loading pretrained model from: {args.pretrain_settings['pretrained_model_path']}")
         state_dict = torch.load(args.pretrain_settings['pretrained_model_path'], map_location='cpu')
         model_without_ddp.load_state_dict(state_dict['model'], strict=False)
@@ -336,17 +339,17 @@ def train(args, device, model, criterion):
             args.clip_max_norm, output_viz_dir, use_wandb=args.use_wandb,
             viz_freq=args.viz_freq, total_epochs=args.epochs, args=args)
         t2 = time.time()
-        # mean_iou = infer_on_davis(model, data_loader_val, device,
-        #                           msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
-        mean_iou = infer_on_kittimots(model, data_loader_val, device,
-                                      msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
+        # mean_iou = infer_on_davis(model, data_loader_val, device, msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
+        # mean_iou = infer_on_kittimots(model, data_loader_val, device, msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
+        mean_iou = infer_on_bdd(model, data_loader_val, device, msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
         logger.debug('**************************')
         logger.debug('[Epoch:%2d] val_mean_iou:%0.3f' % (epoch, mean_iou))
         if mean_iou > best_eval_iou:
             best_eval_iou = mean_iou
             best_eval_epoch = epoch
         # logger.debug('Davis Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
-        logger.debug('kittimots Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
+        # logger.debug('kittimots Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
+        logger.debug('BDD Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
         if epoch > -1:
             lr_scheduler.step()
         if args.output_dir:
