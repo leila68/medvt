@@ -9,7 +9,6 @@ from avos.datasets.test.kittimots_val_data import KittimotsValDataset
 import os
 
 
-
 def denormalize(tensor, mean=(0, 0, 0), std=(1, 1, 1)):
     # Mean and standard deviation used for normalization
     mean = torch.tensor(mean)
@@ -33,8 +32,8 @@ def denormalize(tensor, mean=(0, 0, 0), std=(1, 1, 1)):
 
 if __name__ == "__main__":
 
-    obj_test = KittimotsTrainDataset(num_frames=1, train_size=300, use_ytvos=True, use_flow=True)
-    # obj_test = KittimotsValDataset(num_frames=1, val_size=300,  use_flow=False)
+    # obj_test = KittimotsTrainDataset(num_frames=1, train_size=300, use_ytvos=True, use_flow=True)
+    obj_test = KittimotsValDataset(num_frames=1, val_size=300,  use_flow=False)
 
     #for obj in obj_test:
     for idx, obj in enumerate(obj_test):
@@ -49,7 +48,7 @@ if __name__ == "__main__":
         numpy_img_mask = (numpy_img_mask * 255).astype('uint8')
         cv2.imwrite('kitti_images_mask_%05d.png'%idx, numpy_img_mask)
 
-        # exit(0)
+        exit(0)
 
 
 

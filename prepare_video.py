@@ -32,8 +32,15 @@ def create_overlay(img, mask, colors):
 
 # ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/annotations/375p/0006 ./combined_train
 # ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/predict/0006 ./pred_kitti_img/0006
-# ./dataset/DAVIS_2016/JPEGImages/480p/dance-twirl ./dataset/DAVIS_2016/predict/dance-twirl ./combined_train
 
+# ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/annotations/375p/0006 ./dataset/KITTIMOTS/predict/gt/0006
+# ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/predict/pre_on_davis/logits/0006 ./dataset/KITTIMOTS/predict/pod/0006
+# ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/predict/pre_on_kitti/logits/0006 ./dataset/KITTIMOTS/predict/pok/0006
+
+# ./dataset/BDD/JPEGImages/val/b1d7b3ac-0bdb47dc ./dataset/BDD/Annotations/val/b1d7b3ac-0bdb47dc ./dataset/BDD/predict/gt/b1d7b3ac-0bdb47dc
+# ./dataset/BDD/JPEGImages/val/b1d7b3ac-0bdb47dc ./dataset/BDD/predict/pobdd/logits/ab1d7b3ac-0bdb47dc ./dataset/BDD/predict/pobdd/ab1d7b3ac-0bdb47dc
+# ./dataset/BDD/JPEGImages/val/b4253085-3de357a1 ./dataset/BDD/predict/pod/logits/b4253085-3de357a1 ./dataset/BDD/predict/pod/b4253085-3de357a1
+# ./dataset/BDD/JPEGImages/val/b4253085-3de357a1 ./dataset/BDD/predict/pok/logits/b4253085-3de357a1 ./dataset/BDD/predict/pok/b4253085-3de357a1
 
 def main():
     main_dir = sys.argv[1]

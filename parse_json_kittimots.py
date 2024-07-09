@@ -133,21 +133,24 @@ if __name__ == "__main__":
 
   # subtract_masks(mask1, mask2)
 
-
   img_ids = coco_ds.getImgIds()
   for img_id in img_ids:
       ann_id = coco_ds.getAnnIds(imgIds=[img_id])
-      ann = coco_ds.loadAnns(ann_id)
-      mask = coco_ds.annToMask(ann[0])
-      img_load = coco_ds.loadImgs(img_id)[0]
-      img_path = image_path(kittimots_ann_train_path, img_load['file_name'])
-      # plt.imshow(mask, cmap='gray')
-      # plt.axis('off')
-      # plt.show()
+      all_masks = []
+      for ann in ann_id:
+          ann = coco_ds.loadAnns(ann)
+          mask = coco_ds.annToMask(ann[0])
+          all_masks.append(mask)
 
-      save_mask_images(kittimots_ann_train_path, mask, img_load['file_name'])
-      img = mpimg.imread(img_path)
-      img = mpimg.imread(img_path)
-      # show_images_with_mask(img, mask)
+      combined_mask = np.logical_or.reduce(all_masks)
+      # img_load = coco_ds.loadImgs(img_id)[0]
+      # img_path = image_path(kittimots_ann_train_path, img_load['file_name'])
+      # save_mask_images(kittimots_ann_train_path, combined_mask, img_load['file_name'])
+
+      plt.imshow(combined_mask, cmap='gray')
+      plt.title(img_id)
+      plt.axis('off')
+      plt.show()
+      plt.close()
       # exit()
 

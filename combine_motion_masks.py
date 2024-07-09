@@ -145,7 +145,7 @@ def test_result(kittimots_rgb_training_path, kittimots_gt_training_path, dir_nam
 
     path1 = os.path.join(kittimots_rgb_training_path, dir_name)
     path2 = os.path.join(kittimots_gt_training_path, dir_name)
-    output_dir = os.path.join('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/test_result/', dir_name)
+    output_dir = os.path.join('/Users/leila/Desktop/medvt/dataset/BDD/rgb_and_gt/', dir_name)
 
     # Ensure the output directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -185,6 +185,52 @@ def test_result(kittimots_rgb_training_path, kittimots_gt_training_path, dir_nam
     return output_dir
 
 
+def test_result_bdd(bdd_rgb_training_path, bdd_gt_path, dir_name):
+    path1 = os.path.join(bdd_rgb_training_path, dir_name)
+    path2 = os.path.join(bdd_gt_path, dir_name)
+    output_dir = os.path.join('/Users/leila/Desktop/medvt/dataset/BDD/rgb_and_gt/', dir_name)
+
+    # Ensure the output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    # List all files in the directories
+    images1 = sorted(os.listdir(path1))
+    images2 = sorted(os.listdir(path2))
+
+    # Create a dictionary to map base filenames to their paths for quick lookup
+    images2_dict = {os.path.splitext(img)[0]: img for img in images2}
+
+    for img1 in images1:
+        img1_base, img1_ext = os.path.splitext(img1)
+        img1_path = os.path.join(path1, img1)
+
+        # Check if the corresponding image with the same base name exists in path2
+        if img1_base in images2_dict:
+            img2 = images2_dict[img1_base]
+            img2_path = os.path.join(path2, img2)
+
+            # Read the images
+            image1 = cv2.imread(img1_path)
+            image2 = cv2.imread(img2_path)
+
+            # Check if the images were read correctly
+            if image1 is None or image2 is None:
+                print(f"Could not read one of the images: {img1_path} or {img2_path}")
+                continue
+
+            # Combine images vertically
+            combined_image = cv2.vconcat([image1, image2])
+
+            # Save the combined image
+            combined_image_name = f"combined_{img1_base}.png"  # Save combined image with a single extension
+            combined_image_path = os.path.join(output_dir, combined_image_name)
+            cv2.imwrite(combined_image_path, combined_image)
+            print(f"Saved combined image: {combined_image_path}")
+        else:
+            print(f"Skipping {img1} as it does not have a corresponding image in {path2}")
+    return output_dir
+
+
 def create_gt_files(kittimots_train_json_file, kittimots_gt_training_path):
     coco_ds = COCO(kittimots_train_json_file)
     img_ids = coco_ds.getImgIds()
@@ -214,9 +260,6 @@ def create_gt_files(kittimots_train_json_file, kittimots_gt_training_path):
         # plt.show()
         # plt.close()
         # exit()
-
-
-from PIL import Image
 
 
 def resize_image(input_path, output_path, size=(1242, 375)):
@@ -258,12 +301,12 @@ if __name__ == "__main__":
     kittimots_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02'
     kittimots_gt_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/'
 
-    bdd_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/BDD/ImageSets'
-    bdd_gt_path = '/Users/leila/Desktop/medvt/dataset/BDD/annotations/train'
+    bdd_rgb_training_path = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/val'
+    bdd_gt_path = '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/val'
 
     # create_gt_files(kittimots_train_json_file, kittimots_gt_training_path)
     # check_image_existence(kittimots_rgb_training_path, kittimots_gt_training_path)
-    test_result(bdd_rgb_training_path, bdd_gt_path, dir_name='b1d0a191-03dcecc2')
+    test_result_bdd(bdd_rgb_training_path, bdd_gt_path, dir_name='b1d0a191-65deaeef')
     # print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/0017/000060.png')
     # print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/375p/0000/000014.png')
     # resize_images_in_directory('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02/0019',

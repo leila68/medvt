@@ -229,10 +229,11 @@ if __name__ == "__main__":
 
     # create_gt_files(kittimots_val_json_file, kittimots_gt_val_path)
     # check_image_existence(kittimots_rgb_training_path, kittimots_gt_val_path)
-    # test_result(kittimots_rgb_training_path, kittimots_gt_val_path, dir_name='0002')
+    # test_result('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/predict/gt',
+    #             '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/predict/pok', dir_name='0002')
     # show_masks()
     # show_images()
-    print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/training/0000/000000.png')
+    # print_image_size('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/training/0000/000000.png')
 
 
 
