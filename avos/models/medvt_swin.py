@@ -98,10 +98,6 @@ class MaskHeadSmallConv(nn.Module):
         return multi_scale_features
 
 
-
-
-
-
 class Transformer(nn.Module):
 
     def __init__(self, num_frames, backbone_dims, d_model=384, nhead=8,
@@ -942,7 +938,7 @@ class VOS_SwinMEDVTLPROP(VOS_SwinMEDVT):
         # import ipdb; ipdb.set_trace()
         # pretrained_modules = [self.vistr.backbone, self.vistr.transformer]
         """
-        pretrained_modules = [self.backbone, self.transformer, self.insmask_head]    
+        pretrained_modules = [self.backbone, self.transformer, self.insmask_head]
         for mod in pretrained_modules:
             for p in mod.parameters():
                 p._requires_grad = False
@@ -1313,4 +1309,3 @@ def build_model_medvt_swinbackbone(args):
     criterion.to(torch.device(args.device))
     logger.debug('swin model')
     return model, criterion
-
