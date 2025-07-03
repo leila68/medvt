@@ -140,7 +140,7 @@ class CityscapesValDataset(torch.utils.data.Dataset):
         if self.use_flow and not skip_current_sample_flow:
             target['flows'] = [torch.nn.functional.interpolate(target['flows'][i].unsqueeze(0), img[i].shape[-2:]) if target['flows'][i].shape[-2:] !=  img[i].shape[-2:] else target['flows'][i].unsqueeze(0) for i in range(len(img))]
             target['flows'] = torch.cat(target['flows'], dim=0)
-        print('finish get item')
+        #print('finish get item')
         return torch.cat(img, dim=0), target
 
 
