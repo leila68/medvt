@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-
 def save_motion_mask(kittimots_dataset_path, mask_data, file_name):
     # Extract directory path and file name
     directory, filename = os.path.split(file_name)

@@ -33,34 +33,174 @@ def create_overlay(img, mask, colors):
 # ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/annotations/375p/0006 ./combined_train
 # ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/predict/0006 ./pred_kitti_img/0006
 
-# ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/annotations/375p/0006 ./dataset/KITTIMOTS/predict/gt/0006
-# ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/predict/pre_on_davis/logits/0006 ./dataset/KITTIMOTS/predict/pod/0006
-# ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/predict/pre_on_kitti/logits/0006 ./dataset/KITTIMOTS/predict/pok/0006
 
-# ./dataset/BDD/JPEGImages/val/b1d7b3ac-0bdb47dc ./dataset/BDD/Annotations/val/b1d7b3ac-0bdb47dc ./dataset/BDD/predict/gt/b1d7b3ac-0bdb47dc
-# ./dataset/BDD/JPEGImages/val/b1d7b3ac-0bdb47dc ./dataset/BDD/predict/pobdd/logits/ab1d7b3ac-0bdb47dc ./dataset/BDD/predict/pobdd/ab1d7b3ac-0bdb47dc
-# ./dataset/BDD/JPEGImages/val/b4253085-3de357a1 ./dataset/BDD/predict/pod/logits/b4253085-3de357a1 ./dataset/BDD/predict/pod/b4253085-3de357a1
-# ./dataset/BDD/JPEGImages/val/b4253085-3de357a1 ./dataset/BDD/predict/pok/logits/b4253085-3de357a1 ./dataset/BDD/predict/pok/b4253085-3de357a1
-
-def main():
+def predict_overlay():
     main_dir = sys.argv[1]
     mask_dir = sys.argv[2]
     out_dir = sys.argv[3]
-    files = sorted(os.listdir(main_dir))
-    masks = sorted(os.listdir(mask_dir))
-    if not os.path.exists(out_dir):
-        os.mkdir(out_dir)
 
-    for i in range(len(files)):
-        img = cv2.imread(main_dir + '/' + files[i])
-        mask2 = cv2.imread(mask_dir + '/' + files[i].split('.')[0] + '.png', 0)
-        mask2[mask2 > 0.5] = 255
-        mask2[mask2 < 0.5] = 0
-        overlay = create_overlay(img, mask2, [0, 255])
-        output = os.path.join(out_dir, files[i])
-        cv2.imwrite(output, overlay)
-        print(output)
+    # Recursively find all image files in main_dir
+    image_files = []
+    for root, _, filenames in os.walk(main_dir):
+        for filename in sorted(filenames):
+            if filename.endswith('.png'):
+                full_img_path = os.path.join(root, filename)
+                rel_path = os.path.relpath(full_img_path, main_dir)  # relative to main_dir
+                image_files.append(rel_path)
+
+    # print(f"[INFO] Total images found: {len(image_files)}")
+
+    for rel_path in image_files:
+        img_path = os.path.join(main_dir, rel_path)
+        mask_path = os.path.join(mask_dir, rel_path)
+        output_path = os.path.join(out_dir, rel_path)
+
+        # Create output subfolders if needed
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        img = cv2.imread(img_path)
+        if img is None:
+            print(f"[ERROR] Cannot read image: {img_path}")
+            continue
+
+        if not os.path.exists(mask_path):
+            print(f"[WARNING] Mask not found for: {rel_path}")
+            continue
+
+        mask = cv2.imread(mask_path, 0)
+        if mask is None:
+            print(f"[ERROR] Cannot read mask: {mask_path}")
+            continue
+
+        # print(f"[INFO] Processing {rel_path}")
+        # print(f"[DEBUG] Image shape: {img.shape}, Mask shape: {mask.shape}")
+
+        # Resize mask if needed
+        if mask.shape != img.shape[:2]:
+            # print(f"[INFO] Resizing mask from {mask.shape} to {img.shape[:2]}")
+            mask = cv2.resize(mask, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+
+        # Threshold mask
+        # print(f"[DEBUG] Mask stats before thresholding: min={np.min(mask)}, max={np.max(mask)}")
+        mask = np.where(mask > 0.5, 255, 0).astype(np.uint8)
+        # print(f"[DEBUG] Mask stats after thresholding: min={np.min(mask)}, max={np.max(mask)}")
+
+        # Overlay
+        overlay = create_overlay(img, mask, [0, 255])  # You must have this function defined
+        cv2.imwrite(output_path, overlay)
+        print(f"[INFO] Saved overlay: {output_path}")
+
+
+def cityscapes_predict_overlay():
+    main_dir = sys.argv[1]      # Path to RGB images
+    mask_dir = sys.argv[2]      # Path to GT or prediction masks
+    out_dir = sys.argv[3]       # Path to save overlays
+
+    # Recursively find all mask files
+    mask_files = []
+    for root, _, filenames in os.walk(mask_dir):
+        for filename in sorted(filenames):
+            if filename.endswith('.png'):
+                full_mask_path = os.path.join(root, filename)
+                rel_path = os.path.relpath(full_mask_path, mask_dir)
+                mask_files.append(rel_path)
+
+    print(f"[INFO] Found {len(mask_files)} mask files.")
+
+    for rel_path in mask_files:
+        mask_path = os.path.join(mask_dir, rel_path)
+        img_path = os.path.join(main_dir, rel_path)  # Use same rel_path to find matching image
+        output_path = os.path.join(out_dir, rel_path)
+
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        # Read image
+        img = cv2.imread(img_path)
+        if img is None:
+            print(f"[ERROR] Cannot read image: {img_path}")
+            continue
+
+        # Read mask
+        mask = cv2.imread(mask_path, 0)
+        if mask is None:
+            print(f"[ERROR] Cannot read mask: {mask_path}")
+            continue
+
+        # Resize mask if needed
+        if mask.shape != img.shape[:2]:
+            print(f"[INFO] Resizing mask from {mask.shape} to {img.shape[:2]}")
+            mask = cv2.resize(mask, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+
+        # Threshold mask
+        mask = np.where(mask > 0.5, 255, 0).astype(np.uint8)
+
+        # Overlay
+        overlay = create_overlay(img, mask, [0, 255])  # or [0, 0, 255] for red
+        cv2.imwrite(output_path, overlay)
+        print(f"[INFO] Saved overlay: {output_path}")
+
+
+def stack_images_vertically(path1, path2, path3, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+
+    filenames = sorted([f for f in os.listdir(path1) if f.endswith('.png')])
+
+    print(f"Found {len(filenames)} .png files in {path1}")
+
+    for filename in filenames:
+        img1_path = os.path.join(path1, filename)
+        img2_path = os.path.join(path2, filename)
+        img3_path = os.path.join(path3, filename)
+
+        print(f"\nProcessing: {filename}")
+        print(f" -> {img1_path}")
+        print(f" -> {img2_path}")
+        print(f" -> {img3_path}")
+
+        if not (os.path.exists(img1_path) and os.path.exists(img2_path) and os.path.exists(img3_path)):
+            print(f" [!] Skipping {filename} (missing in one of the folders)")
+            continue
+
+        try:
+            img1 = Image.open(img1_path)
+            img2 = Image.open(img2_path)
+            img3 = Image.open(img3_path)
+        except Exception as e:
+            print(f" [!] Failed to open one of the images: {e}")
+            continue
+
+        width = min(img1.width, img2.width, img3.width)
+        img1 = img1.resize((width, int(img1.height * width / img1.width)))
+        img2 = img2.resize((width, int(img2.height * width / img2.width)))
+        img3 = img3.resize((width, int(img3.height * width / img3.width)))
+
+        total_height = img1.height + img2.height + img3.height
+        stacked_img = Image.new('RGB', (width, total_height))
+        stacked_img.paste(img1, (0, 0))
+        stacked_img.paste(img2, (0, img1.height))
+        stacked_img.paste(img3, (0, img1.height + img2.height))
+
+        output_path = os.path.join(output_dir, filename)
+        stacked_img.save(output_path)
+        print(f" [✓] Saved to {output_path}")
+
+    print("\nAll done!")
+
+# ./dataset/Cityscapes/leftImg8bit_sequence/lindau ./dataset/Cityscapes/Annotations/val/lindau ./dataset/Cityscapes/prediction_overlay/gt/lindau
+# ./dataset/Cityscapes/leftImg8bit_sequence/lindau ./dataset/Cityscapes/prediction_overlay/msq/logits-msq/lindau ./dataset/Cityscapes/prediction_overlay/msq/lindau
+# ./dataset/Cityscapes/leftImg8bit_sequence/lindau ./dataset/Cityscapes/prediction_overlay/msqm/logits-msqm/lindau ./dataset/Cityscapes/prediction_overlay/msqm/lindau
+
+# ./dataset/Cityscapes/leftImg8bit_sequence/munster ./dataset/Cityscapes/Annotations/val/munster ./dataset/Cityscapes/prediction_overlay/gt/munster
+# ./dataset/Cityscapes/leftImg8bit_sequence/munster ./dataset/Cityscapes/prediction_overlay/msq/logits-msq/munster ./dataset/Cityscapes/prediction_overlay/msq/munster
+# ./dataset/Cityscapes/leftImg8bit_sequence/munster ./dataset/Cityscapes/prediction_overlay/msqm/logits-msqm/munster ./dataset/Cityscapes/prediction_overlay/msqm/munster
 
 
 if __name__ == '__main__':
-    main()
+
+    # predict_overlay()
+    # cityscapes_predict_overlay()
+
+    stack_images_vertically("/Users/leila/Desktop/medvt/dataset/Cityscapes/cityscapes_prediction_result/gt/frankfurt", "/Users/leila/Desktop/medvt/dataset/Cityscapes/cityscapes_prediction_result/msq/frankfurt",
+                            "/Users/leila/Desktop/medvt/dataset/Cityscapes/cityscapes_prediction_result/msqm/frankfurt", "/Users/leila/Desktop/medvt/dataset/Cityscapes/cityscapes_prediction_result/compare_result/frankfurt")
+
+
