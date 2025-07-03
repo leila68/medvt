@@ -36,7 +36,7 @@ class CityscapesTrainDataset(torch.utils.data.Dataset):
         self.ytvos19_flow_path = dataset_path_config.ytvos19_flow_path
 
         self.frames_info = {
-            'cityscapes': {},
+            'cityscapes': {}
         }
         self.img_ids = []
         logger.debug('loading Cityscapes train seqs...')
