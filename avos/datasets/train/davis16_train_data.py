@@ -51,6 +51,7 @@ class Davis16TrainDataset(torch.utils.data.Dataset):
                 self.img_ids.extend([('davis', video_name, frame_index) for frame_index in range(len(frames))])
         # import ipdb;ipdb.set_trace()
         if self.use_ytvos:
+            #print('self.use_ytvos', self.use_ytvos)
             logger.debug('loading ytvos train seqs...')
             video_names = glob.glob(self.ytvos19_gt_path + "/*/")
             video_names = [video_name.split('/')[-2] for video_name in video_names]
@@ -59,7 +60,8 @@ class Davis16TrainDataset(torch.utils.data.Dataset):
                 frames = sorted(glob.glob(os.path.join(self.ytvos19_gt_path, video_name, '*.png')))
                 self.frames_info['ytvos'][video_name] = [frame_path.split('/')[-1][:-4] for frame_path in frames]
                 self.img_ids.extend(
-                    [('ytvos', video_name, frame_index) for frame_index in range(0, len(frames), self.num_frames)])
+                    #[('ytvos', video_name, frame_index) for frame_index in range(0, len(frames), self.num_frames)])  # sampling base on num_frames
+                    [('ytvos', video_name, frame_index) for frame_index in range(0, len(frames), 9)]) # fixed sampling, after every 9 frames 
 
     def __len__(self):
         return len(self.img_ids)
