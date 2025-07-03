@@ -21,7 +21,7 @@ import numpy as np
 import random
 import logging
 import re
-# import wandb
+import wandb
 import pathlib
 import torch.backends.cudnn as cudnn
 import torch
@@ -29,21 +29,24 @@ from torch.utils.data import DataLoader, DistributedSampler
 from avos.utils.torch_poly_lr_decay import PolynomialLRDecay as PolynomialLRDecay
 from avos.datasets.train.davis16_train_data import Davis16TrainDataset
 from avos.datasets.test.davis16_val_data import Davis16ValDataset
-from avos.datasets.test.bdd_val_data import BddValDataset
+# from avos.datasets.test.bdd_val_data import BddValDataset
+from avos.datasets.test.cityscapes_val_data import CityscapesValDataset
 from avos.utils import misc as misc
 from avos.datasets import transforms as T
 from avos.evals import inference_on_all_vos_dataset
 from avos.evals import infer_on_davis
 from avos.evals import infer_on_kittimots
 from avos.evals import infer_on_bdd
-# from avos.utils.wandb_utils import init_or_resume_wandb_run, get_viz_img
+from avos.evals import infer_on_cityscapes
+from avos.utils.wandb_utils import init_or_resume_wandb_run, get_viz_img
 from avos.models.utils import parse_argdict
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 import os
 from avos.datasets.test.kittimots_val_data import KittimotsValDataset
 from avos.datasets.train.kittimots_train_data import KittimotsTrainDataset
-from avos.datasets.train.bdd_train_data import BddTrainDataset
+# from avos.datasets.train.bdd_train_data import BddTrainDataset
+from avos.datasets.train.cityscapes_train_data import CityscapesTrainDataset
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -111,7 +114,7 @@ def get_args_parser():
     parser.add_argument('--experiment_name', default='medvtmm_{params_summary}')
     parser.add_argument('--output_dir', default='/local/riemann1/home/rezaul/outputs/medvtmm/medvt_avos/train/',
                         help='save path')
-    parser.add_argument('--use_wandb', action='store_true', default=False)
+    parser.add_argument('--use_wandb', action='store_true')
     parser.add_argument('--wandb_user', type=str, default='medvt')
     parser.add_argument('--wandb_project', type=str, default='medvt')
     parser.add_argument('--viz_freq', type=int, default=2000)
@@ -186,6 +189,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     criterion.train()
     metric_logger = misc.MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', misc.SmoothedValue(window_size=1, fmt='{value:.6f}'))
+
     header = 'Train Epoch: [{}/{}]:'.format(epoch, total_epochs)
     print_freq = 3000
     i_iter = 0
@@ -199,7 +203,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     tt1 = time.time()
     for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
         i_iter = i_iter + 1
-        print("==>", i_iter)
+        # print("==>", i_iter)
         samples = samples.to(device)
         targets = [{k: v.to(device) if k in ['masks', 'flows'] else v for k, v in t.items()} for t in targets]
         # import ipdb;ipdb.set_trace()
@@ -232,6 +236,13 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         metric_logger.update(loss=loss_value, **loss_dict_reduced_scaled, **loss_dict_reduced_unscaled)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
+        if args.use_wandb:
+            wandb_dict = {'loss': loss_value, 'lr': optimizer.param_groups[0]["lr"]}
+            viz_img = get_viz_img(samples.tensors, targets, outputs, inverse_norm_transform)
+            if i_iter % viz_freq == 0:
+                wandb_dict['viz_img'] = wandb.Image(viz_img)
+            wandb.log(wandb_dict)
+
         loss_sum += float(loss_value)
         item_count += 1
         if i_iter % 50 == 49:
@@ -239,6 +250,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             loss_sum = 0
             item_count = 0
             record_csv(_loss_t_csv_fn, ['%e' % loss_avg])
+
     metric_logger.synchronize_between_processes()
     logger.debug("Averaged stats:{}".format(metric_logger))
     # save_loss_plot(epoch, _loss_t_csv_fn, viz_save_dir=output_viz_dir)
@@ -246,10 +258,11 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 
 def create_data_loaders(args):
-    use_ytvos_for_train = True # not args.finetune
+    use_ytvos_for_train = False # not args.finetune true for train on davis-ytvos
     # dataset_train = Davis16TrainDataset(num_frames=args.num_frames, train_size=args.train_size, use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
-    # dataset_train = KittimotsTrainDataset(num_frames=args.num_frames, train_size=args.train_size, use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
-    dataset_train = BddTrainDataset(num_frames=args.num_frames, train_size=args.train_size, use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
+    dataset_train = KittimotsTrainDataset(num_frames=args.num_frames, train_size=args.train_size, use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
+    # dataset_train = BddTrainDataset(num_frames=args.num_frames, train_size=args.train_size, use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
+    # dataset_train = CityscapesTrainDataset(num_frames=args.num_frames, train_size=args.train_size, use_ytvos=use_ytvos_for_train, use_flow=args.use_flow)
     if args.distributed:
         sampler_train = DistributedSampler(dataset_train)
         sampler_train.set_epoch(args.start_epoch)
@@ -263,8 +276,9 @@ def create_data_loaders(args):
                                    collate_fn=misc.collate_fn, num_workers=args.num_workers)
 
     # dataset_val = Davis16ValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
-    # dataset_val = KittimotsValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
-    dataset_val = BddValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
+    dataset_val = KittimotsValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
+    # dataset_val = BddValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
+    # dataset_val = CityscapesValDataset(num_frames=args.num_frames, val_size=args.val_size, use_flow=args.use_flow)
     if args.distributed:
         sampler_val = DistributedSampler(dataset_val, shuffle=False)
     else:
@@ -340,16 +354,20 @@ def train(args, device, model, criterion):
             viz_freq=args.viz_freq, total_epochs=args.epochs, args=args)
         t2 = time.time()
         # mean_iou = infer_on_davis(model, data_loader_val, device, msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
-        # mean_iou = infer_on_kittimots(model, data_loader_val, device, msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
-        mean_iou = infer_on_bdd(model, data_loader_val, device, msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
+        mean_iou = infer_on_kittimots(model, data_loader_val, device, msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
+        # mean_iou = infer_on_bdd(model, data_loader_val, device, msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
+        # mean_iou = infer_on_cityscapes(model, data_loader_val, device, msc=False, flip=True, save_pred=False, out_dir=output_viz_dir)
         logger.debug('**************************')
         logger.debug('[Epoch:%2d] val_mean_iou:%0.3f' % (epoch, mean_iou))
+        if args.use_wandb:
+            wandb.log({'miou val': mean_iou})
         if mean_iou > best_eval_iou:
             best_eval_iou = mean_iou
             best_eval_epoch = epoch
         # logger.debug('Davis Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
-        # logger.debug('kittimots Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
-        logger.debug('BDD Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
+        logger.debug('Kittimots Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
+        # logger.debug('BDD Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
+        # logger.debug('Cityscapes Best eval epoch:%03d mean_iou: %0.3f' % (best_eval_epoch, best_eval_iou))
         if epoch > -1:
             lr_scheduler.step()
         if args.output_dir:
@@ -369,7 +387,7 @@ def train(args, device, model, criterion):
             args.model_path = output_dir / 'checkpoint_best.pth'
             args.aug = False
             torch.cuda.empty_cache()
-            inference_on_all_vos_dataset(args, device, model, datasets=['ytbo', 'moca'], val_sizes={'davis': 473, 'ytbo': 360, 'moca': 473}, _load_state=False)
+            inference_on_all_vos_dataset(args, device, model, datasets=['ytbo', 'davis'], val_sizes={'davis': 473, 'ytbo': 360, 'moca': 473}, _load_state=False)
             torch.cuda.empty_cache()
             logger.debug('**************************')
         t3 = time.time()
@@ -478,6 +496,22 @@ if __name__ == '__main__':
     logger.debug('output_dir: ' + str(output_path))
     logger.debug('experiment_name:%s' % parsed_args.experiment_name)
     logger.debug('log file: ' + str(os.path.join(parsed_args.output_dir, 'out.log')))
+
+    # if parsed_args.use_wandb:
+    #     wandb_mode = "offline"
+    #     wandb.init(
+    #         mode=wandb_mode,
+    #         entity=parsed_args.wandb_user,
+    #         project=parsed_args.wandb_project
+    #     )
+    if parsed_args.use_wandb:
+        wandb_id_file_path = pathlib.Path(os.path.join(output_path, parsed_args.experiment_name + '_wandb.txt'))
+        config = init_or_resume_wandb_run(wandb_id_file_path,
+                                          entity_name=parsed_args.wandb_user,
+                                          project_name=parsed_args.wandb_project,
+                                          run_name=parsed_args.experiment_name,
+                                          config=parsed_args)
+        logger.debug("Initialized Wandb")
 
     main(parsed_args)
     logger.debug('Finished training...')
