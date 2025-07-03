@@ -453,3 +453,13 @@ def accuracy(output, target, topk=(1,)):
 def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
     # type: (Tensor, Optional[List[int]], Optional[float], str, Optional[bool]) -> Tensor
     return torch.nn.functional.interpolate(input, size, scale_factor, mode, align_corners)
+
+def ThBinarization(SalMap3D, Th=0.5):
+    # function to binarize using a simple threshold
+    height, width, duration = SalMap3D.shape
+    BinMask3D = np.zeros((height, width, duration), dtype=np.float32)
+    for frame in range(duration):
+        mask2D = SalMap3D[:, :, frame] > Th
+        BinMask3D[mask2D, frame] = 1
+        del mask2D
+    return BinMask3D
