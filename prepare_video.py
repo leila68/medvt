@@ -30,9 +30,6 @@ def create_overlay(img, mask, colors):
     img2[mask == colors[1], :] = blended_arr[mask == colors[1], :]
     return img2
 
-# ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/annotations/375p/0006 ./combined_train
-# ./dataset/KITTIMOTS/images/training/image_02/0006 ./dataset/KITTIMOTS/predict/0006 ./pred_kitti_img/0006
-
 
 def predict_overlay():
     main_dir = sys.argv[1]
