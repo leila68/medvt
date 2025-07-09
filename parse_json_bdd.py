@@ -70,6 +70,7 @@ def save_mask_images(bdd_val_path, mask_data, file_name):
 
     print("image is saved in:", mask_file_path)
 
+
 def combine_mask_files(path1, path2, output_dir):
     # Ensure the output directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -105,17 +106,18 @@ def combine_mask_files(path1, path2, output_dir):
 
 if __name__ == "__main__":
 
-  # bdd_ann_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/b1e1a7b8-65ec7612'
-  # bdd_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/val/b1e1a7b8-65ec7612'
-  # bdd_seq_json_file = '/Users/leila/Desktop/medvt/my_annotation_json/b1e1a7b8-65ec7612_coco.json'
-  #
-  # combine_mask_files('/Users/leila/Desktop/medvt/dataset/BDD/Annotations/val/b1e1a7b8-65ec7612',
-  #                    '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/b1e1a7b8-65ec7612',
-  #                    '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/out_612')
 
-  bdd_ann_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/7dc_dog'
+  # bdd_ann_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/7dc_dog'
+  # bdd_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/val/b1d7b3ac-0bdb47dc'
+  # bdd_seq_json_file = '/Users/leila/Desktop/medvt/my_annotation_json/7dc_dog_coco.json'
+  #
+  # combine_mask_files('/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/out_7dc',
+  #                    '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/7dc_dog',
+  #                    '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/out_7dc_dog')
+
+  bdd_ann_val_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations'
   bdd_val_path = '/Users/leila/Desktop/medvt/dataset/BDD/JPEGImages/val/b1d7b3ac-0bdb47dc'
-  bdd_seq_json_file = '/Users/leila/Desktop/medvt/my_annotation_json/7dc_dog_coco.json'
+  bdd_seq_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/via_project_9Jul2025_10h34m_coco.json'
 
   combine_mask_files('/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/out_7dc',
                      '/Users/leila/Desktop/medvt/dataset/BDD/Annotations/my_annotation/7dc_dog',
@@ -130,25 +132,25 @@ if __name__ == "__main__":
   # plt.axis('off')
   # plt.show()
   #
-  # img_ids = coco_ds.getImgIds()
-  # for img_id in img_ids:
-  #     ann_id = coco_ds.getAnnIds(imgIds=[img_id])
-  #     all_masks = []
-  #     for ann in ann_id:
-  #         ann = coco_ds.loadAnns(ann)
-  #         mask = coco_ds.annToMask(ann[0])
-  #         all_masks.append(mask)
-  #
-  #     combined_mask = np.logical_or.reduce(all_masks)
-  #     img_load = coco_ds.loadImgs(img_id)[0]
-  #     # img_name = image_path(kittimots_ann_train_path, img_load['file_name'])
-  #     save_mask_images(bdd_ann_val_path, combined_mask, img_load['file_name'])
-  #
-  #     # plt.imshow(combined_mask, cmap='gray')
-  #     # plt.title(img_id)
-  #     # plt.axis('off')
-  #     # plt.show()
-  #     # plt.close()
-  #     print('print')
-  #     # exit()
+  img_ids = coco_ds.getImgIds()
+  for img_id in img_ids:
+      ann_id = coco_ds.getAnnIds(imgIds=[img_id])
+      all_masks = []
+      for ann in ann_id:
+          ann = coco_ds.loadAnns(ann)
+          mask = coco_ds.annToMask(ann[0])
+          all_masks.append(mask)
+
+      combined_mask = np.logical_or.reduce(all_masks)
+      img_load = coco_ds.loadImgs(img_id)[0]
+      # img_name = image_path(kittimots_ann_train_path, img_load['file_name'])
+      save_mask_images(bdd_ann_val_path, combined_mask, img_load['file_name'])
+
+      # plt.imshow(combined_mask, cmap='gray')
+      # plt.title(img_id)
+      # plt.axis('off')
+      # plt.show()
+      # plt.close()
+      print('print')
+      # exit()
 
