@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 
-def create_image_path(kittimots_training_path, kittimots_train_json_file, id):
-  with open(kittimots_train_json_file, 'r') as f:
+def create_image_path(kittimots_training_path, kittimots_val_fix_json_file, id):
+  with open(kittimots_val_fix_json_file, 'r') as f:
     data = json.load(f)
 
   for entry in data['annotations']:
@@ -49,30 +49,6 @@ def show_images_with_mask(img, mask):
     plt.close()
 
 
-def save_mask_images(kittimots_dataset_path, mask_data, file_name):
-    # Extract directory path and file name
-    directory, filename = os.path.split(file_name)
-
-    # Ensure the directory exists, create it if it doesn't
-    full_directory = os.path.join(kittimots_dataset_path, directory)
-    os.makedirs(full_directory, exist_ok=True)
-
-    # Save the mask image with the same name in the corresponding directory
-    mask_file_path = os.path.join(full_directory, filename)
-
-    # Convert mask data to numpy array
-    mask_array = np.array(mask_data, dtype=np.uint8)
-
-
-    # Scale the mask to range 0-255
-    mask_scaled = mask_array * 255
-
-    # Save the mask image as PNG
-    cv2.imwrite(mask_file_path, mask_scaled)
-
-    print("image is saved in:", mask_file_path)
-
-
 def subtract_masks(mask1, mask2):
     # Perform pixel-wise subtraction
     difference_mask = np.abs(mask2 - mask1)
@@ -109,19 +85,44 @@ def subtract_masks(mask1, mask2):
     plt.close()
 
 
+def save_mask_images(kittimots_dataset_path, mask_data, file_name):
+    # Extract directory path and file name
+    directory, filename = os.path.split(file_name)
+
+    # Ensure the directory exists, create it if it doesn't
+    full_directory = os.path.join(kittimots_dataset_path, directory)
+    os.makedirs(full_directory, exist_ok=True)
+
+    # Save the mask image with the same name in the corresponding directory
+    mask_file_path = os.path.join(full_directory, filename)
+
+    # Convert mask data to numpy array
+    mask_array = np.array(mask_data, dtype=np.uint8)
+
+    # Scale the mask to range 0-255
+    mask_scaled = mask_array * 255
+
+    # Save the mask image as PNG
+    cv2.imwrite(mask_file_path, mask_scaled)
+
+    print("image is saved in:", mask_file_path)
+
+
 if __name__ == "__main__":
   kittimots_ann_train_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/training/'
-  kittimots_ann_val_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/validation/'
+  kittimots_ann_val_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/validation_fix/'
+
   kittimots_training_path = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02'
+
   kittimots_train_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_train.json'
   kittimots_val_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_val.json'
-  kittimots_val_fix_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_val.json'
+  kittimots_val_fix_json_file = '/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/KITTIMOTS_MOSeg_val_fix.json'
 
   # img_show = mpimg.imread('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/annotations/training/0011/000051.png')
   # img_mks_show = mpimg.imread('/Users/leila/Desktop/medvt/dataset/KITTIMOTS/images/training/image_02/0011/000051.png')
   # show_images_with_mask(img_mks_show, img_show)
 
-  coco_ds = COCO(kittimots_train_json_file)
+  coco_ds = COCO(kittimots_val_fix_json_file)
 
   ann_id = coco_ds.getAnnIds(imgIds=[111])
   ann = coco_ds.loadAnns(ann_id)
@@ -134,23 +135,32 @@ if __name__ == "__main__":
   # subtract_masks(mask1, mask2)
 
   img_ids = coco_ds.getImgIds()
-  for img_id in img_ids:
-      ann_id = coco_ds.getAnnIds(imgIds=[img_id])
-      all_masks = []
-      for ann in ann_id:
-          ann = coco_ds.loadAnns(ann)
-          mask = coco_ds.annToMask(ann[0])
-          all_masks.append(mask)
 
-      combined_mask = np.logical_or.reduce(all_masks)
-      # img_load = coco_ds.loadImgs(img_id)[0]
-      # img_path = image_path(kittimots_ann_train_path, img_load['file_name'])
-      # save_mask_images(kittimots_ann_train_path, combined_mask, img_load['file_name'])
+  for img_id in img_ids:
+      ann_ids = coco_ds.getAnnIds(imgIds=[img_id])
+      all_masks = []
+
+      for ann_id in ann_ids:
+          ann = coco_ds.loadAnns(ann_id)[0]
+
+          # Only include annotations with category_id == 0 (moving)
+          if ann['category_id'] == 0:
+              mask = coco_ds.annToMask(ann)
+              all_masks.append(mask)
+
+      if not all_masks:
+          print(f"No moving masks found for image {img_id}")
+          continue
+
+      combined_mask = np.logical_or.reduce(all_masks).astype(np.uint8)
+
+      img_load = coco_ds.loadImgs(img_id)[0]
+      img_path = image_path(kittimots_ann_val_path, img_load['file_name'])
+
+      save_mask_images(kittimots_ann_val_path, combined_mask, img_load['file_name'])
 
       plt.imshow(combined_mask, cmap='gray')
       plt.title(img_id)
       plt.axis('off')
-      plt.show()
+      # plt.show()
       plt.close()
-      # exit()
-
